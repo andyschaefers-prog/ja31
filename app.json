@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "JA 31",
+    "slug": "jaschaefers",
+    "owner": "ja-schaeferss-team",
+    "version": "0.6.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "ios": { "supportsTablet": true, "bundleIdentifier": "de.jaschaefers.ja31" },
+    "android": { "package": "de.jaschaefers.ja31" },
+    "extra": {
+      "eas": {
+        "projectId": "09436074-4657-4d22-935d-ab782ae8c007"
+      }
+    }
+  }
+}
