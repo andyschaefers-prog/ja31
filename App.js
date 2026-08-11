@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { bestBotMove, dealRound, loserFromScores, scoreHand, swapOne } from './src/gameEngine';
-import { applyRoundResult, STARTING_PROFILE, unlockedStakes, xpNeeded } from './src/progression';
-import LocalGame from './src/LocalGame';
-import OnlineLobby from './src/OnlineLobby';
+import { bestBotMove, dealRound, loserFromScores, scoreHand, swapOne } from './gameEngine';
+import { applyRoundResult, STARTING_PROFILE, unlockedStakes, xpNeeded } from './progression';
+import LocalGame from './LocalGame';
+import OnlineLobby from './OnlineLobbyScreen';
 
 const RED = '#e31b23';
 
@@ -143,3 +143,4 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: 10, marginTop: 8 }, secondaryAction: { flex: 1, borderColor: '#555', borderWidth: 1, padding: 15, borderRadius: 5 }, primaryAction: { flex: 1, backgroundColor: RED, padding: 16, borderRadius: 5 }, actionText: { color: '#fff', textAlign: 'center', fontWeight: '900', fontSize: 12 }, help: { color: '#666', fontSize: 11, textAlign: 'center', marginTop: 18 },
   stakeTitle: { color: '#777', textAlign: 'center', fontSize: 11, letterSpacing: 2, marginTop: 5 }, stakes: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginVertical: 10, flexWrap: 'wrap' }, stake: { borderColor: '#444', borderWidth: 1, paddingVertical: 8, paddingHorizontal: 13, borderRadius: 20 }, stakeActive: { backgroundColor: RED, borderColor: RED }, stakeText: { color: '#fff', fontWeight: '900' },
 });
+
