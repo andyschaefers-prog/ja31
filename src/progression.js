@@ -1,4 +1,54 @@
-export const STARTING_PROFILE = Object.freeze({ level: 1, xp: 0, coins: 1000, wins: 0 });
+export const STARTING_PROFILE = Object.freeze({
+  level: 1, xp: 0, coins: 1000, wins: 0,
+  playerName: 'JA-SPIELER',
+  avatar: { face: '😎', hair: '🧢', outfit: '🖤', extra: '👑', flag: '🇩🇪' },
+});
+
+export const DAILY_TASKS = [
+  { id: 'play3', title: 'Spiele 3 Runden', goal: 3, reward: 75 },
+  { id: 'win1', title: 'Gewinne eine Runde', goal: 1, reward: 100 },
+  { id: 'score31', title: 'Erreiche genau 31', goal: 1, reward: 150 },
+];
+
+export function dayKey(timestamp = Date.now()) {
+  return new Date(timestamp).toISOString().slice(0, 10);
+}
+
+export function ensureDaily(profile, timestamp = Date.now()) {
+  const today = dayKey(timestamp);
+  if (profile.daily?.day === today) return profile;
+  return { ...profile, daily: { day: today, played: 0, won: 0, score31: 0, claimed: [] } };
+}
+
+export function recordDailyRound(profile, result, playerScore, timestamp = Date.now()) {
+  const current = ensureDaily(profile, timestamp);
+  return { ...current, daily: {
+    ...current.daily,
+    played: current.daily.played + 1,
+    won: current.daily.won + (result === 'win' ? 1 : 0),
+    score31: current.daily.score31 + (playerScore === 31 ? 1 : 0),
+  } };
+}
+
+export function claimDailyTask(profile, taskId, timestamp = Date.now()) {
+  const current = ensureDaily(profile, timestamp);
+  const task = DAILY_TASKS.find((item) => item.id === taskId);
+  if (!task || current.daily.claimed.includes(taskId)) return current;
+  const progress = taskId === 'play3' ? current.daily.played : taskId === 'win1' ? current.daily.won : current.daily.score31;
+  if (progress < task.goal) return current;
+  return { ...current, coins: current.coins + task.reward, daily: { ...current.daily, claimed: [...current.daily.claimed, taskId] } };
+}
+
+export function canOpenDailyCrates(profile, timestamp = Date.now()) {
+  return !profile.lastCrateAt || timestamp - profile.lastCrateAt >= 24 * 60 * 60 * 1000;
+}
+
+export function openDailyCrate(profile, random = Math.random, timestamp = Date.now()) {
+  if (!canOpenDailyCrates(profile, timestamp)) return { profile, reward: null };
+  const rewards = [0, 50, 500];
+  const reward = rewards[Math.floor(random() * rewards.length)];
+  return { profile: { ...profile, coins: profile.coins + reward, lastCrateAt: timestamp }, reward };
+}
 
 const STAKE_UNLOCKS = [
   { level: 1, stake: 50 },
