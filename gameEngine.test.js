@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dealLocalRound, localRoundResult, scoreHand } from './gameEngine.js';
+import { dealLocalRound, localRoundResult, scoreHand, shouldBotKnock } from './gameEngine.js';
 const c = (suit, rank, value) => ({ id: `${suit}-${rank}`, suit, rank, value });
 
 test('31 is scored correctly', () => {
@@ -30,4 +30,8 @@ test('all players with the lowest score lose the round', () => {
   ]);
   assert.deepEqual(result.winners, [0]);
   assert.deepEqual(result.losers, [1, 2]);
+});
+
+test('bot ends the round with a very strong hand', () => {
+  assert.equal(shouldBotKnock([c('♥','A',11), c('♥','K',10), c('♥','10',10)], 0), true);
 });

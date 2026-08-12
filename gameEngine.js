@@ -75,6 +75,14 @@ export function bestBotMove(hand, middle) {
   return best;
 }
 
+export function shouldBotKnock(hand, botTurns = 0) {
+  const score = scoreHand(hand);
+  if (score >= 31) return true;
+  if (score >= 29 && botTurns >= 1) return true;
+  if (score >= 27 && botTurns >= 3) return true;
+  return botTurns >= 6;
+}
+
 export function loserFromScores(playerScore, botScore) {
   if (playerScore === botScore) return 'draw';
   return playerScore < botScore ? 'player' : 'bot';

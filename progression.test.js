@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { applyRoundResult, STARTING_PROFILE, unlockedStakes, xpNeeded } from './progression.js';
+import { applyRoundResult, claimDailyTask, openDailyCrate, recordDailyRound, STARTING_PROFILE, unlockedStakes, xpNeeded } from './progression.js';
 
 test('new players start with only the 50 coin stake', () => {
   assert.deepEqual(unlockedStakes(1, 1000), [50]);
@@ -24,4 +24,16 @@ test('a comeback bonus prevents an empty account', () => {
   const profile = applyRoundResult({ ...STARTING_PROFILE, coins: 50 }, 'loss', 50);
   assert.equal(profile.coins, 100);
   assert.equal(profile.lastBonus, 100);
+});
+
+test('daily task can be claimed after its goal', () => {
+  let profile = recordDailyRound(STARTING_PROFILE, 'win', 31, Date.UTC(2026, 7, 12));
+  profile = claimDailyTask(profile, 'win1', Date.UTC(2026, 7, 12));
+  assert.equal(profile.coins, 1100);
+});
+
+test('daily crate can only be opened once per 24 hours', () => {
+  const first = openDailyCrate(STARTING_PROFILE, () => 0.9, 100000000);
+  assert.equal(first.reward, 500);
+  assert.equal(openDailyCrate(first.profile, () => 0.9, 100000001).reward, null);
 });
