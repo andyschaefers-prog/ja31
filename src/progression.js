@@ -1,5 +1,5 @@
 export const STARTING_PROFILE = Object.freeze({
-  level: 1, xp: 0, coins: 1000, wins: 0,
+  level: 1, xp: 0, coins: 1000, wins: 0, currentStreak: 0, bestStreak: 0,
   playerName: 'JA-SPIELER',
   avatar: { face: '😎', hair: '🧢', outfit: '🖤', extra: '👑', flag: '🇩🇪' },
 });
@@ -81,12 +81,17 @@ export function applyRoundResult(profile, result, stake) {
   }
   const balance = Math.max(0, profile.coins + coinChange);
   const comebackBonus = balance < 50 ? 100 : 0;
+  const currentStreak = result === 'win' ? (profile.currentStreak || 0) + 1 : result === 'loss' ? 0 : (profile.currentStreak || 0);
+  const streakBonus = result === 'win' && currentStreak > 1 ? Math.min(100, (currentStreak - 1) * 10) : 0;
   return {
     ...profile,
     level,
     xp,
-    coins: balance + comebackBonus,
+    coins: balance + comebackBonus + streakBonus,
     wins: profile.wins + (result === 'win' ? 1 : 0),
+    currentStreak,
+    bestStreak: Math.max(profile.bestStreak || 0, currentStreak),
+    streakBonus,
     lastBonus: comebackBonus,
   };
 }

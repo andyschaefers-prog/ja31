@@ -26,6 +26,14 @@ test('a comeback bonus prevents an empty account', () => {
   assert.equal(profile.lastBonus, 100);
 });
 
+test('consecutive wins build a streak and award a bonus', () => {
+  const first = applyRoundResult({ ...STARTING_PROFILE }, 'win', 50);
+  const second = applyRoundResult(first, 'win', 50);
+  assert.equal(second.currentStreak, 2);
+  assert.equal(second.bestStreak, 2);
+  assert.equal(second.streakBonus, 10);
+});
+
 test('daily task can be claimed after its goal', () => {
   let profile = recordDailyRound(STARTING_PROFILE, 'win', 31, Date.UTC(2026, 7, 12));
   profile = claimDailyTask(profile, 'win1', Date.UTC(2026, 7, 12));
