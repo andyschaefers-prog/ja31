@@ -6,6 +6,7 @@ import { bestBotMove, dealRound, loserFromScores, scoreHand, shouldBotKnock, swa
 import { applyRoundResult, canOpenDailyCrates, claimDailyTask, DAILY_TASKS, ensureDaily, openDailyCrate, recordDailyRound, STARTING_PROFILE, unlockedStakes, xpNeeded } from './src/progression';
 import LocalGame from './src/LocalGame';
 import OnlineLobby from './src/OnlineLobby';
+import ComputerGame from './src/ComputerGame';
 
 const RED = '#e31b23';
 const LOGO = require('./assets/ja-logo.png');
@@ -176,7 +177,7 @@ export default function App() {
           <TouchableOpacity style={styles.quickTile} onPress={() => setScreen('tasks')}><Text style={styles.quickIcon}>✓</Text><Text style={styles.quickText}>TAGESAUFGABEN</Text></TouchableOpacity>
           <TouchableOpacity style={[styles.quickTile,canOpenDailyCrates(profile)&&styles.quickReady]} onPress={() => setScreen('crates')}><Text style={styles.quickIcon}>?</Text><Text style={styles.quickText}>JA-KISTEN</Text></TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.primary} onPress={() => setScreen('game')}><Text style={styles.modeNo}>01</Text><Text style={styles.buttonText}>GEGEN COMPUTER</Text><Text style={styles.arrow}>›</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.primary} onPress={() => setScreen('computer')}><Text style={styles.modeNo}>01</Text><Text style={styles.buttonText}>GEGEN 1–3 COMPUTER</Text><Text style={styles.arrow}>›</Text></TouchableOpacity>
         <TouchableOpacity style={styles.secondary} onPress={() => setScreen('local')}><Text style={styles.modeNo}>02</Text><Text style={styles.buttonText}>LOKAL MIT FREUNDEN</Text><Text style={styles.arrow}>›</Text></TouchableOpacity>
         <TouchableOpacity style={styles.secondary} onPress={() => setScreen('online')}><Text style={styles.modeNo}>03</Text><Text style={styles.buttonText}>ONLINE-LOBBY</Text><Text style={styles.arrow}>›</Text></TouchableOpacity>
         <Text style={styles.ruleHint}>Beide Tauschvarianten · 3 Leben · 32 Karten</Text>
@@ -194,6 +195,7 @@ export default function App() {
 
   if (screen === 'local') return <LocalGame onExit={() => setScreen('menu')} />;
   if (screen === 'online') return <OnlineLobby onExit={() => setScreen('menu')} />;
+  if (screen === 'computer') return <ComputerGame profile={profile} setProfile={setProfile} stake={stake} onExit={() => setScreen('menu')} />;
 
   return (
     <SafeAreaView style={styles.page}>

@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+node_modules/
+.expo/
+dist/
+web-build/
+*.apk
+*.aab
+*.ipa
+*.log
+.DS_Store
+
