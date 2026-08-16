@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dealLocalRound, localRoundResult, scoreHand, shouldBotKnock } from './gameEngine.js';
+import { canKnock, dealLocalRound, localRoundResult, scoreHand, shouldBotKnock } from './gameEngine.js';
 const c = (suit, rank, value) => ({ id: `${suit}-${rank}`, suit, rank, value });
 
 test('31 is scored correctly', () => {
@@ -34,4 +34,9 @@ test('all players with the lowest score lose the round', () => {
 
 test('bot ends the round with a very strong hand', () => {
   assert.equal(shouldBotKnock([c('♥','A',11), c('♥','K',10), c('♥','10',10)], 0), true);
+});
+
+test('knocking is only allowed from the second table round', () => {
+  assert.equal(canKnock(0), false);
+  assert.equal(canKnock(1), true);
 });

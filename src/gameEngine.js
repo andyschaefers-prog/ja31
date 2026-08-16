@@ -83,6 +83,10 @@ export function shouldBotKnock(hand, botTurns = 0) {
   return botTurns >= 6;
 }
 
+export function canKnock(completedTableRounds = 0) {
+  return completedTableRounds >= 1;
+}
+
 export function loserFromScores(playerScore, botScore) {
   if (playerScore === botScore) return 'draw';
   return playerScore < botScore ? 'player' : 'bot';

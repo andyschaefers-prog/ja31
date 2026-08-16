@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Image, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { dealLocalRound, localRoundResult, scoreHand, swapOne } from './gameEngine';
+import { canKnock, dealLocalRound, localRoundResult, scoreHand, swapOne } from './gameEngine';
 import { applyRoundResult, STARTING_PROFILE } from './progression';
 
 const RED = '#e31b23';
@@ -30,11 +30,12 @@ export default function LocalGame({ onExit }) {
   const [knocker, setKnocker] = useState(null);
   const [finalTurns, setFinalTurns] = useState(0);
   const [result, setResult] = useState(null);
+  const [turnCount, setTurnCount] = useState(0);
 
   function startMatch() {
     setPlayers(newPlayers(count));
     setRound(dealLocalRound(count));
-    setActive(0); setRevealed(false); setKnocker(null); setFinalTurns(0); setResult(null);
+    setActive(0); setRevealed(false); setKnocker(null); setFinalTurns(0); setResult(null); setTurnCount(0);
   }
 
   function finishRound(nextRound = round) {
@@ -53,6 +54,7 @@ export default function LocalGame({ onExit }) {
       if (finalTurns <= 1) { finishRound(nextRound); return; }
       setFinalTurns(finalTurns - 1);
     }
+    setTurnCount((value) => value + 1);
     setRound(nextRound); setActive((active + 1) % players.length); setSelected(null); setRevealed(false);
   }
 
@@ -69,15 +71,20 @@ export default function LocalGame({ onExit }) {
   }
 
   function knock() {
+    if (!canKnock(Math.floor(turnCount / players.length))) return;
     setKnocker(active); setFinalTurns(players.length - 1);
     setActive((active + 1) % players.length); setSelected(null); setRevealed(false);
+  }
+
+  function passTurn() {
+    completeTurn(round);
   }
 
   function nextRound() {
     const alive = players.filter((player) => player.lives > 0);
     if (alive.length <= 1) { setPlayers([]); setRound(null); setResult(null); return; }
     setRound(dealLocalRound(players.length)); setActive(0); setRevealed(false);
-    setSelected(null); setKnocker(null); setFinalTurns(0); setResult(null);
+    setSelected(null); setKnocker(null); setFinalTurns(0); setResult(null); setTurnCount(0);
   }
 
   if (!round) return <SafeAreaView style={styles.page}><View style={styles.setup}>
@@ -113,7 +120,8 @@ export default function LocalGame({ onExit }) {
     </View>
     <Text style={styles.info}>Einzeltausch: Erst deine Karte, dann eine Karte aus der Mitte.</Text>
     <TouchableOpacity style={styles.outline} onPress={swapAll}><Text style={styles.buttonText}>ALLE 3 TAUSCHEN</Text></TouchableOpacity>
-    {knocker === null && <TouchableOpacity style={styles.primary} onPress={knock}><Text style={styles.buttonText}>KLOPFEN</Text></TouchableOpacity>}
+    <TouchableOpacity style={styles.outline} onPress={passTurn}><Text style={styles.buttonText}>SCHIEBEN</Text></TouchableOpacity>
+    {knocker === null && <TouchableOpacity disabled={!canKnock(Math.floor(turnCount / players.length))} style={[styles.primary,!canKnock(Math.floor(turnCount / players.length))&&{opacity:.35}]} onPress={knock}><Text style={styles.buttonText}>{canKnock(Math.floor(turnCount / players.length))?'✊ KLOPFEN':'🔒 KLOPFEN AB RUNDE 2'}</Text></TouchableOpacity>}
   </ScrollView></SafeAreaView>;
 }
 
