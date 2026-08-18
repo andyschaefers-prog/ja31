@@ -1,5 +1,14 @@
 # JA 31 – Große Klappe, kleines Blatt
 
+## Battle Update 1.7
+
+- tägliches animiertes JA-Glücksrad mit acht Gewinnfeldern
+- sichtbarer 3-2-1-Countdown beim Klopfen
+- pulsierender Alarmtisch während der letzten Züge
+- fliegende Karten beim Einzel- und Kompletttausch
+- drei unterschiedliche Bot-Stärken: Locker, Frech und Brutal
+- Schwierigkeitsanzeige direkt in der Arena
+
 Spielbarer App-Prototyp Version 0.6 für Android und iPhone auf Basis von Expo/React Native.
 
 ## Enthalten

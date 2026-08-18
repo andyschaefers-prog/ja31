@@ -3,14 +3,14 @@
     "name": "JA 31",
     "slug": "jaschaefers",
     "owner": "ja-schaeferss-team",
-    "version": "1.4.0",
+    "version": "1.7.0",
     "icon": "./assets/ja-logo.png",
-    "orientation": "portrait",
+    "orientation": "landscape",
     "userInterfaceStyle": "dark",
     "ios": { "supportsTablet": true, "bundleIdentifier": "de.jaschaefers.ja31" },
     "android": {
       "package": "de.jaschaefers.ja31",
-      "versionCode": 14,
+      "versionCode": 17,
       "adaptiveIcon": {
         "foregroundImage": "./assets/ja-logo.png",
         "backgroundColor": "#050505"

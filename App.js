@@ -3,12 +3,13 @@ import { Animated, Image, Platform, SafeAreaView, ScrollView, StatusBar, StyleSh
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { bestBotMove, dealRound, loserFromScores, scoreHand, shouldBotKnock, swapOne } from './src/gameEngine';
-import { applyRoundResult, canOpenDailyCrates, claimDailyTask, DAILY_TASKS, ensureDaily, openDailyCrate, recordDailyRound, STARTING_PROFILE, unlockedStakes, xpNeeded } from './src/progression';
+import { applyRoundResult, canOpenDailyCrates, claimDailyTask, DAILY_TASKS, ensureDaily, recordDailyRound, spinDailyWheel, STARTING_PROFILE, unlockedStakes, WHEEL_REWARDS, xpNeeded } from './src/progression';
 import LocalGame from './src/LocalGame';
 import OnlineLobby from './src/OnlineLobby';
 import ComputerGame from './src/ComputerGame';
 
 const RED = '#e31b23';
+const GOLD = '#f1bd36';
 const LOGO = require('./assets/ja-logo.png');
 const PROFILE_KEY = 'ja31.profile.v1';
 const OPPONENTS = [
@@ -77,7 +78,10 @@ export default function App() {
   const [roundResult, setRoundResult] = useState(null);
   const [botTurns, setBotTurns] = useState(0);
   const [dailyReward, setDailyReward] = useState(null);
+  const [wheelSpinning, setWheelSpinning] = useState(false);
+  const [wheelTarget, setWheelTarget] = useState(0);
   const actionPulse = useRef(new Animated.Value(1)).current;
+  const wheelTurn = useRef(new Animated.Value(0)).current;
   const opponent = [...OPPONENTS].reverse().find((entry) => profile.level >= entry.level) || OPPONENTS[0];
 
   useEffect(() => { AsyncStorage.getItem(PROFILE_KEY).then((saved) => { if (saved) setProfile(JSON.parse(saved)); }).finally(() => setProfileReady(true)); }, []);
@@ -153,11 +157,15 @@ export default function App() {
   }
 
   function collectTask(taskId) { setProfile((current) => claimDailyTask(current, taskId)); }
-  function chooseCrate() {
-    const opened = openDailyCrate(profile);
+  function spinWheel() {
+    if (wheelSpinning) return;
+    const opened = spinDailyWheel(profile);
     if (opened.reward === null) return;
-    setProfile(opened.profile); setDailyReward(opened.reward);
-    Haptics.notificationAsync(opened.reward === 500 ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning);
+    setWheelSpinning(true); setDailyReward(null); setWheelTarget(opened.index); wheelTurn.setValue(0);
+    Animated.timing(wheelTurn,{toValue:1,duration:2600,useNativeDriver:true}).start(()=>{
+      setProfile(opened.profile); setDailyReward(opened.reward); setWheelSpinning(false);
+      Haptics.notificationAsync(opened.reward >= 250 ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning);
+    });
   }
 
   if (screen === 'menu') return (
@@ -176,7 +184,7 @@ export default function App() {
         <View style={styles.quickRow}>
           <TouchableOpacity style={styles.quickTile} onPress={() => setScreen('rooms')}><Text style={styles.quickIcon}>◉</Text><Text style={styles.quickText}>EINSATZ-RÄUME</Text></TouchableOpacity>
           <TouchableOpacity style={styles.quickTile} onPress={() => setScreen('tasks')}><Text style={styles.quickIcon}>✓</Text><Text style={styles.quickText}>TAGESAUFGABEN</Text></TouchableOpacity>
-          <TouchableOpacity style={[styles.quickTile,canOpenDailyCrates(profile)&&styles.quickReady]} onPress={() => setScreen('crates')}><Text style={styles.quickIcon}>?</Text><Text style={styles.quickText}>JA-KISTEN</Text></TouchableOpacity>
+          <TouchableOpacity style={[styles.quickTile,canOpenDailyCrates(profile)&&styles.quickReady]} onPress={() => {setDailyReward(null);setScreen('wheel')}}><Text style={styles.quickIcon}>↻</Text><Text style={styles.quickText}>GLÜCKSRAD</Text></TouchableOpacity>
         </View>
         <TouchableOpacity style={styles.primary} onPress={() => setScreen('computer')}><Text style={styles.modeNo}>01</Text><Text style={styles.buttonText}>GEGEN 1–3 COMPUTER</Text><Text style={styles.arrow}>›</Text></TouchableOpacity>
         <TouchableOpacity style={styles.secondary} onPress={() => setScreen('local')}><Text style={styles.modeNo}>02</Text><Text style={styles.buttonText}>LOKAL MIT FREUNDEN</Text><Text style={styles.arrow}>›</Text></TouchableOpacity>
@@ -192,7 +200,7 @@ export default function App() {
 
   if (screen === 'tasks') { const ready=ensureDaily(profile); const progress={play3:ready.daily.played,win1:ready.daily.won,score31:ready.daily.score31}; return <SafeAreaView style={styles.page}><BrandBackground/><ScrollView contentContainerStyle={styles.panelPage}><TouchableOpacity style={styles.backButton} onPress={()=>setScreen('menu')}><Text style={styles.back}>‹ HAUPTMENÜ</Text></TouchableOpacity><Text style={styles.panelTitle}>TAGESAUFGABEN</Text><Text style={styles.panelSub}>JEDEN TAG NEUE BEUTE.</Text>{DAILY_TASKS.map(task=>{const done=progress[task.id]>=task.goal;const claimed=ready.daily.claimed.includes(task.id);return <View key={task.id} style={styles.task}><View style={styles.taskBadge}><Text style={styles.taskBadgeText}>{done?'✓':'JA'}</Text></View><View style={{flex:1}}><Text style={styles.taskTitle}>{task.title}</Text><Text style={styles.taskProgress}>{Math.min(progress[task.id],task.goal)} / {task.goal} · ◉ {task.reward}</Text></View><TouchableOpacity disabled={!done||claimed} onPress={()=>collectTask(task.id)} style={[styles.claim,(!done||claimed)&&styles.locked]}><Text style={styles.claimText}>{claimed?'GEHOLT':done?'HOLEN':'OFFEN'}</Text></TouchableOpacity></View>})}</ScrollView></SafeAreaView> }
 
-  if (screen === 'crates') return <SafeAreaView style={styles.page}><BrandBackground/><View style={styles.panelPage}><TouchableOpacity style={styles.backButton} onPress={()=>setScreen('menu')}><Text style={styles.back}>‹ HAUPTMENÜ</Text></TouchableOpacity><Text style={styles.panelTitle}>DREI JA-KISTEN</Text><Text style={styles.panelSub}>EINE CHANCE ALLE 24 STUNDEN.</Text><Text style={styles.crateHint}>{dailyReward===null?'Wähle eine Kiste. Darin stecken NEIN, 50 oder 500 Coins.':dailyReward===0?'NEIN! Heute leider keine Coins.':`JA! Du bekommst ${dailyReward} Coins!`}</Text><View style={styles.crateRow}>{[0,1,2].map(i=><TouchableOpacity key={i} disabled={!canOpenDailyCrates(profile)||dailyReward!==null} onPress={chooseCrate} style={styles.crate}><Text style={styles.crateCrown}>♛</Text><Text style={styles.crateJA}>{dailyReward===null?'JA':i===1&&dailyReward!==null?dailyReward:'?'}</Text></TouchableOpacity>)}</View><Text style={styles.help}>{canOpenDailyCrates(profile)?'DEINE TÄGLICHE CHANCE IST BEREIT.':'NÄCHSTE CHANCE IN 24 STUNDEN.'}</Text></View></SafeAreaView>;
+  if (screen === 'wheel') return <SafeAreaView style={styles.page}><BrandBackground/><View style={styles.panelPage}><TouchableOpacity style={styles.backButton} onPress={()=>setScreen('menu')}><Text style={styles.back}>‹ HAUPTMENÜ</Text></TouchableOpacity><Text style={styles.panelTitle}>JA-GLÜCKSRAD</Text><Text style={styles.panelSub}>EIN DREH ALLE 24 STUNDEN.</Text><Text style={styles.wheelPointer}>▼</Text><Animated.View style={[styles.wheel,{transform:[{rotate:wheelTurn.interpolate({inputRange:[0,1],outputRange:['0deg',`${1800+((8-wheelTarget)%8)*45}deg`]})}]}]}>{WHEEL_REWARDS.map((reward,index)=><View key={`${reward}-${index}`} style={[styles.wheelSegment,{transform:[{rotate:`${index*45}deg`},{translateY:-73}]}]}><Text style={styles.wheelValue}>{reward===0?'NEIN':reward}</Text></View>)}<View style={styles.wheelHub}><Text style={styles.wheelJA}>JA</Text></View></Animated.View><Text style={styles.crateHint}>{wheelSpinning?'DAS RAD DREHT …':dailyReward===null?'Dreh das Rad und hol dir deine Tagesbeute!':dailyReward===0?'NEIN! Morgen gibt es die nächste Chance.':`VOLLTREFFER! +${dailyReward} COINS`}</Text><TouchableOpacity disabled={!canOpenDailyCrates(profile)||wheelSpinning} onPress={spinWheel} style={[styles.wheelButton,(!canOpenDailyCrates(profile)||wheelSpinning)&&styles.locked]}><Text style={styles.buttonText}>{wheelSpinning?'LÄUFT …':canOpenDailyCrates(profile)?'JETZT DREHEN':'MORGEN WIEDER'}</Text></TouchableOpacity></View></SafeAreaView>;
 
   if (screen === 'local') return <LocalGame onExit={() => setScreen('menu')} />;
   if (screen === 'online') return <OnlineLobby onExit={() => setScreen('menu')} />;
@@ -252,6 +260,6 @@ const styles = StyleSheet.create({
   quickRow:{flexDirection:'row',gap:7,marginBottom:7},quickTile:{flex:1,minHeight:68,backgroundColor:'#111',borderColor:'#333',borderWidth:1,alignItems:'center',justifyContent:'center',padding:5},quickReady:{borderColor:RED,shadowColor:RED,shadowOpacity:.45,shadowRadius:7,elevation:5},quickIcon:{color:RED,fontSize:21,fontWeight:'900'},quickText:{color:'#fff',fontSize:8,fontWeight:'900',textAlign:'center',marginTop:4},
   panelPage:{flexGrow:1,paddingHorizontal:20,paddingTop:Platform.OS==='android'?(StatusBar.currentHeight||24)+18:28,paddingBottom:40},panelTitle:{color:'#fff',fontSize:34,fontWeight:'900',fontStyle:'italic',textAlign:'center',marginTop:28},panelSub:{color:RED,fontWeight:'900',textAlign:'center',letterSpacing:2,marginBottom:24},roomGrid:{flexDirection:'row',flexWrap:'wrap',gap:10,justifyContent:'center'},room:{width:'47%',minHeight:120,backgroundColor:'#17110f',borderColor:RED,borderWidth:2,padding:14,justifyContent:'center'},roomLevel:{color:'#888',fontSize:10,fontWeight:'900',letterSpacing:1},roomStake:{color:'#f1bd36',fontSize:25,fontWeight:'900',marginVertical:5},roomMeta:{color:'#fff',fontSize:9,fontWeight:'900'},locked:{opacity:.35},
   task:{flexDirection:'row',alignItems:'center',gap:12,backgroundColor:'#111',borderLeftColor:RED,borderLeftWidth:4,padding:14,marginBottom:10},taskBadge:{width:46,height:46,borderRadius:23,backgroundColor:RED,alignItems:'center',justifyContent:'center'},taskBadgeText:{color:'#fff',fontWeight:'900'},taskTitle:{color:'#fff',fontWeight:'900',fontSize:15},taskProgress:{color:'#f1bd36',marginTop:4,fontSize:11},claim:{backgroundColor:RED,paddingVertical:9,paddingHorizontal:10},claimText:{color:'#fff',fontSize:9,fontWeight:'900'},
-  crateHint:{color:'#ddd',textAlign:'center',fontSize:15,lineHeight:22,marginVertical:22},crateRow:{flexDirection:'row',gap:10,justifyContent:'center'},crate:{width:'29%',height:138,backgroundColor:'#240608',borderColor:RED,borderWidth:3,alignItems:'center',justifyContent:'center',transform:[{rotate:'-2deg'}]},crateCrown:{color:'#fff',fontSize:29},crateJA:{color:RED,fontSize:25,fontWeight:'900',fontStyle:'italic'},
+  crateHint:{color:'#ddd',textAlign:'center',fontSize:15,lineHeight:22,marginVertical:18},wheelPointer:{color:'#fff',fontSize:32,textAlign:'center',zIndex:3,marginBottom:-13},wheel:{width:220,height:220,borderRadius:110,backgroundColor:'#250609',borderColor:RED,borderWidth:8,alignSelf:'center',alignItems:'center',justifyContent:'center',shadowColor:RED,shadowOpacity:.8,shadowRadius:20,elevation:15},wheelSegment:{position:'absolute',height:36,width:54,alignItems:'center',justifyContent:'center',backgroundColor:'#111',borderColor:GOLD,borderWidth:1,borderRadius:5},wheelValue:{color:'#fff',fontWeight:'900',fontSize:10},wheelHub:{width:70,height:70,borderRadius:35,backgroundColor:RED,borderColor:GOLD,borderWidth:4,alignItems:'center',justifyContent:'center'},wheelJA:{color:'#fff',fontSize:24,fontWeight:'900',fontStyle:'italic'},wheelButton:{backgroundColor:RED,padding:17,alignSelf:'center',minWidth:220,flexDirection:'row'},
   editorLabel:{color:'#888',fontSize:10,fontWeight:'900',letterSpacing:2,marginTop:18,marginBottom:8},nameInput:{backgroundColor:'#111',borderColor:'#444',borderWidth:1,color:'#fff',fontSize:18,fontWeight:'900',paddingHorizontal:15,paddingVertical:13},optionRow:{flexDirection:'row',gap:7,flexWrap:'wrap'},avatarOption:{width:48,height:48,backgroundColor:'#111',borderColor:'#333',borderWidth:1,alignItems:'center',justifyContent:'center'},avatarOptionActive:{borderColor:RED,borderWidth:3,backgroundColor:'#280608'},optionEmoji:{fontSize:23,color:'#fff'},
 });
