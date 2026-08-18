@@ -2,7 +2,34 @@ export const STARTING_PROFILE = Object.freeze({
   level: 1, xp: 0, coins: 1000, wins: 0, currentStreak: 0, bestStreak: 0,
   playerName: 'JA-SPIELER',
   avatar: { face: '😎', hair: '🧢', outfit: '🖤', extra: '👑', flag: '🇩🇪' },
+  stats: { games: 0, wins: 0, losses: 0, draws: 0, score31: 0, knocks: 0, coinsWon: 0 },
+  achievements: [],
+  unlockedDecks: ['classic'],
+  unlockedTables: ['arena'],
+  selectedDeck: 'classic',
+  selectedTable: 'arena',
+  settings: { sound: true, vibration: true },
 });
+
+export const ACHIEVEMENTS = [
+  { id: 'first31', title: 'ERSTE 31', description: 'Erreiche genau 31 Punkte.', reward: 150, check: (s) => s.score31 >= 1 },
+  { id: 'knock10', title: 'KLOPFKÖNIG', description: 'Klopfe zehnmal.', reward: 200, check: (s) => s.knocks >= 10 },
+  { id: 'streak3', title: 'DREIFACH JA', description: 'Gewinne dreimal in Folge.', reward: 250, check: (s, p) => (p.bestStreak || 0) >= 3 },
+  { id: 'games25', title: 'STAMMSPIELER', description: 'Spiele 25 Runden.', reward: 300, check: (s) => s.games >= 25 },
+];
+
+export const DECKS = [
+  { id: 'classic', title: 'JA CLASSIC', unlock: 1 },
+  { id: 'grunge', title: 'ROTES GRUNGE', unlock: 3 },
+  { id: 'skull', title: 'TOTENKOPF', unlock: 6 },
+  { id: 'legend', title: 'GOLDENE LEGENDE', unlock: 10 },
+];
+
+export const TABLES = [
+  { id: 'arena', title: 'JA ARENA', unlock: 1 },
+  { id: 'underground', title: 'UNDERGROUND', unlock: 4 },
+  { id: 'crown', title: 'KRONENTISCH', unlock: 8 },
+];
 
 export const DAILY_TASKS = [
   { id: 'play3', title: 'Spiele 3 Runden', goal: 3, reward: 75 },
@@ -50,6 +77,15 @@ export function openDailyCrate(profile, random = Math.random, timestamp = Date.n
   return { profile: { ...profile, coins: profile.coins + reward, lastCrateAt: timestamp }, reward };
 }
 
+export const WHEEL_REWARDS = [0, 25, 50, 75, 100, 250, 500, 50];
+
+export function spinDailyWheel(profile, random = Math.random, timestamp = Date.now()) {
+  if (!canOpenDailyCrates(profile, timestamp)) return { profile, reward: null, index: null };
+  const index = Math.min(WHEEL_REWARDS.length - 1, Math.floor(random() * WHEEL_REWARDS.length));
+  const reward = WHEEL_REWARDS[index];
+  return { profile: { ...profile, coins: profile.coins + reward, lastCrateAt: timestamp }, reward, index };
+}
+
 const STAKE_UNLOCKS = [
   { level: 1, stake: 50 },
   { level: 2, stake: 100 },
@@ -83,6 +119,17 @@ export function applyRoundResult(profile, result, stake) {
   const comebackBonus = balance < 50 ? 100 : 0;
   const currentStreak = result === 'win' ? (profile.currentStreak || 0) + 1 : result === 'loss' ? 0 : (profile.currentStreak || 0);
   const streakBonus = result === 'win' && currentStreak > 1 ? Math.min(100, (currentStreak - 1) * 10) : 0;
+  const stats = profile.stats || STARTING_PROFILE.stats;
+  const nextStats = {
+    ...stats,
+    games: stats.games + 1,
+    wins: stats.wins + (result === 'win' ? 1 : 0),
+    losses: stats.losses + (result === 'loss' ? 1 : 0),
+    draws: stats.draws + (result === 'draw' ? 1 : 0),
+    coinsWon: stats.coinsWon + (result === 'win' ? stake : 0),
+  };
+  const unlockedDecks = DECKS.filter((item) => item.unlock <= level).map((item) => item.id);
+  const unlockedTables = TABLES.filter((item) => item.unlock <= level).map((item) => item.id);
   return {
     ...profile,
     level,
@@ -93,5 +140,26 @@ export function applyRoundResult(profile, result, stake) {
     bestStreak: Math.max(profile.bestStreak || 0, currentStreak),
     streakBonus,
     lastBonus: comebackBonus,
+    stats: nextStats,
+    unlockedDecks,
+    unlockedTables,
+  };
+}
+
+export function recordBattleEvent(profile, event) {
+  const stats = profile.stats || STARTING_PROFILE.stats;
+  const nextStats = {
+    ...stats,
+    score31: stats.score31 + (event === 'score31' ? 1 : 0),
+    knocks: stats.knocks + (event === 'knock' ? 1 : 0),
+  };
+  const owned = profile.achievements || [];
+  const newlyUnlocked = ACHIEVEMENTS.filter((item) => !owned.includes(item.id) && item.check(nextStats, profile));
+  return {
+    ...profile,
+    stats: nextStats,
+    achievements: [...owned, ...newlyUnlocked.map((item) => item.id)],
+    coins: profile.coins + newlyUnlocked.reduce((sum, item) => sum + item.reward, 0),
+    lastAchievements: newlyUnlocked.map((item) => item.id),
   };
 }
