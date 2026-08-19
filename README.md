@@ -1,5 +1,13 @@
 # JA 31 – Große Klappe, kleines Blatt
 
+## Spaßmenü 1.9
+
+- freundliches zweispaltiges Hauptmenü speziell fürs Querformat
+- persönliche Begrüßung und farbige Spielmodi
+- wechselnde Sprüche von Karten-Kalle
+- Überrasch-mich-Schnellstart
+- deutlichere Tagesmissionen und Glücksrad-Belohnung
+
 ## Querformat-Fix 1.8
 
 - komplette Computer-Arena passt ohne Scrollen auf einen Handybildschirm

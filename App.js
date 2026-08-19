@@ -26,6 +26,13 @@ const AVATAR_OPTIONS = {
   extra: ['👑','🎸','🕶️','🦅','💥',''],
   flag: ['🇩🇪','🇪🇺','🇹🇷','🇮🇹','🇪🇸','🏴‍☠️'],
 };
+const FUN_LINES = [
+  'Karten-Kalle behauptet, er habe nur wegen der Sonne verloren. Drinnen.',
+  'Die Rote Königin lächelt. Das ist meistens kein gutes Zeichen.',
+  'Drei Karten, drei Leben und mindestens eine richtig schlechte Ausrede.',
+  'Wer klopft, muss auch mit dem Echo klarkommen.',
+  'Heute wird nicht gemeckert. Heute wird JA gesagt und gewonnen!',
+];
 
 function PlayerAvatar({ profile, large = false }) {
   const avatar = profile.avatar || STARTING_PROFILE.avatar;
@@ -38,7 +45,7 @@ function PlayerAvatar({ profile, large = false }) {
 
 function BrandBackground() {
   return <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-    <View style={styles.redGlow} /><View style={styles.slashOne} /><View style={styles.slashTwo} />
+    <View style={styles.redGlow} /><View style={styles.slashOne} /><View style={styles.slashTwo} /><Text style={styles.bgCardOne}>♥</Text><Text style={styles.bgCardTwo}>♣</Text><Text style={styles.bgSpark}>✨</Text>
   </View>;
 }
 
@@ -80,6 +87,7 @@ export default function App() {
   const [dailyReward, setDailyReward] = useState(null);
   const [wheelSpinning, setWheelSpinning] = useState(false);
   const [wheelTarget, setWheelTarget] = useState(0);
+  const [funIndex, setFunIndex] = useState(0);
   const actionPulse = useRef(new Animated.Value(1)).current;
   const wheelTurn = useRef(new Animated.Value(0)).current;
   const opponent = [...OPPONENTS].reverse().find((entry) => profile.level >= entry.level) || OPPONENTS[0];
@@ -172,25 +180,30 @@ export default function App() {
     <SafeAreaView style={styles.page}>
       <StatusBar barStyle="light-content" />
       <BrandBackground />
-      <ScrollView contentContainerStyle={styles.menu}>
-        <BrandMark />
-        <Text style={styles.claim}>GROSSE KLAPPE.</Text><Text style={styles.claimWhite}>KLEINES BLATT.</Text>
+      <View style={styles.menu}>
+        <View style={styles.menuMain}>
+        <View style={styles.menuWelcome}>
+        <View style={styles.menuBrandRow}><BrandMark compact /><View style={{flex:1}}><Text style={styles.welcomeSmall}>SCHÖN, DASS DU DA BIST!</Text><Text style={styles.welcomeTitle}>HALLO {profile.playerName||'JA-SPIELER'} 👋</Text><Text style={styles.welcomeSub}>Bereit für eine freche Runde 31?</Text></View></View>
+        <TouchableOpacity onPress={()=>{setFunIndex(value=>(value+1)%FUN_LINES.length);Haptics.selectionAsync()}} style={styles.funBubble}><Text style={styles.funFace}>😄</Text><View style={{flex:1}}><Text style={styles.funLabel}>KARTEN-KALLES SPRUCH</Text><Text style={styles.funText}>{FUN_LINES[funIndex]}</Text></View><Text style={styles.funNext}>↻</Text></TouchableOpacity>
         <View style={styles.profileBox}>
           <View style={styles.profileTop}><TouchableOpacity style={styles.profileIdentity} onPress={()=>setScreen('profile')}><PlayerAvatar profile={profile}/><View><Text style={styles.eyebrow}>DEIN SPIELERPROFIL · BEARBEITEN</Text><Text style={styles.profileName}>{profile.playerName||STARTING_PROFILE.playerName}</Text><Text style={styles.profileLevel}>LEVEL {profile.level}</Text></View></TouchableOpacity><Text style={styles.coins}>● {profile.coins}</Text></View>
           <View style={styles.xpTrack}><View style={[styles.xpFill,{width:`${Math.min(100,(profile.xp/xpNeeded(profile.level))*100)}%`}]} /></View>
           <Text style={styles.xp}>{profile.xp} / {xpNeeded(profile.level)} XP BIS ZUM NÄCHSTEN LEVEL</Text>
           <View style={styles.streakRow}><Text style={styles.streakNow}>🔥 AKTUELLE SERIE: {profile.currentStreak||0}</Text><Text style={styles.streakBest}>REKORD: {profile.bestStreak||0}</Text></View>
         </View>
-        <View style={styles.quickRow}>
-          <TouchableOpacity style={styles.quickTile} onPress={() => setScreen('rooms')}><Text style={styles.quickIcon}>◉</Text><Text style={styles.quickText}>EINSATZ-RÄUME</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.quickTile} onPress={() => setScreen('tasks')}><Text style={styles.quickIcon}>✓</Text><Text style={styles.quickText}>TAGESAUFGABEN</Text></TouchableOpacity>
-          <TouchableOpacity style={[styles.quickTile,canOpenDailyCrates(profile)&&styles.quickReady]} onPress={() => {setDailyReward(null);setScreen('wheel')}}><Text style={styles.quickIcon}>↻</Text><Text style={styles.quickText}>GLÜCKSRAD</Text></TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.primary} onPress={() => setScreen('computer')}><Text style={styles.modeNo}>01</Text><Text style={styles.buttonText}>GEGEN 1–3 COMPUTER</Text><Text style={styles.arrow}>›</Text></TouchableOpacity>
-        <TouchableOpacity style={styles.secondary} onPress={() => setScreen('local')}><Text style={styles.modeNo}>02</Text><Text style={styles.buttonText}>LOKAL MIT FREUNDEN</Text><Text style={styles.arrow}>›</Text></TouchableOpacity>
-        <TouchableOpacity style={styles.secondary} onPress={() => setScreen('online')}><Text style={styles.modeNo}>03</Text><Text style={styles.buttonText}>ONLINE-LOBBY</Text><Text style={styles.arrow}>›</Text></TouchableOpacity>
-        <Text style={styles.ruleHint}>Beide Tauschvarianten · 3 Leben · 32 Karten</Text>
-      </ScrollView>
+        <View style={styles.menuGames}><Text style={styles.playKicker}>SUCH DIR DEIN CHAOS AUS</Text><Text style={styles.playTitle}>WAS SPIELEN WIR?</Text>
+        <TouchableOpacity style={[styles.gameChoice,styles.gameChoiceHot]} onPress={() => setScreen('computer')}><Text style={styles.gameEmoji}>🤖</Text><View style={{flex:1}}><Text style={styles.gameTitle}>COMPUTER-ARENA</Text><Text style={styles.gameSub}>1–3 freche Gegner · mehrere Modi</Text></View><Text style={styles.gameArrow}>›</Text></TouchableOpacity>
+        <TouchableOpacity style={[styles.gameChoice,styles.gameChoiceGold]} onPress={() => setScreen('local')}><Text style={styles.gameEmoji}>👨‍👩‍👧‍👦</Text><View style={{flex:1}}><Text style={styles.gameTitle}>FREUNDE AM HANDY</Text><Text style={styles.gameSub}>Zusammen spielen und weitergeben</Text></View><Text style={styles.gameArrow}>›</Text></TouchableOpacity>
+        <TouchableOpacity style={[styles.gameChoice,styles.gameChoiceBlue]} onPress={() => setScreen('online')}><Text style={styles.gameEmoji}>🌍</Text><View style={{flex:1}}><Text style={styles.gameTitle}>ONLINE-LOBBY</Text><Text style={styles.gameSub}>Raum erstellen oder Freunden beitreten</Text></View><Text style={styles.gameArrow}>›</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.surpriseButton} onPress={()=>{setFunIndex(value=>(value+1)%FUN_LINES.length);setScreen('computer')}}><Text style={styles.surpriseText}>🎲 ÜBERRASCH MICH!</Text></TouchableOpacity>
+        </View></View>
+        <View style={styles.quickRow}>
+          <TouchableOpacity style={[styles.quickTile,styles.quickCoins]} onPress={() => setScreen('rooms')}><Text style={styles.quickIcon}>🪙</Text><View><Text style={styles.quickText}>EINSATZ-RÄUME</Text><Text style={styles.quickSub}>Mehr Risiko, mehr Beute</Text></View></TouchableOpacity>
+          <TouchableOpacity style={[styles.quickTile,styles.quickTask]} onPress={() => setScreen('tasks')}><Text style={styles.quickIcon}>🎯</Text><View><Text style={styles.quickText}>TAGESMISSIONEN</Text><Text style={styles.quickSub}>Belohnungen abholen</Text></View></TouchableOpacity>
+          <TouchableOpacity style={[styles.quickTile,styles.quickWheel,canOpenDailyCrates(profile)&&styles.quickReady]} onPress={() => {setDailyReward(null);setScreen('wheel')}}><Text style={styles.quickIcon}>🎡</Text><View><Text style={styles.quickText}>GLÜCKSRAD</Text><Text style={styles.quickSub}>{canOpenDailyCrates(profile)?'Dein Dreh ist bereit!':'Morgen wieder drehen'}</Text></View>{canOpenDailyCrates(profile)&&<Text style={styles.readyBadge}>BEREIT</Text>}</TouchableOpacity>
+        </View>
+      </View>
     </SafeAreaView>
   );
 
@@ -262,4 +275,12 @@ const styles = StyleSheet.create({
   task:{flexDirection:'row',alignItems:'center',gap:12,backgroundColor:'#111',borderLeftColor:RED,borderLeftWidth:4,padding:14,marginBottom:10},taskBadge:{width:46,height:46,borderRadius:23,backgroundColor:RED,alignItems:'center',justifyContent:'center'},taskBadgeText:{color:'#fff',fontWeight:'900'},taskTitle:{color:'#fff',fontWeight:'900',fontSize:15},taskProgress:{color:'#f1bd36',marginTop:4,fontSize:11},claim:{backgroundColor:RED,paddingVertical:9,paddingHorizontal:10},claimText:{color:'#fff',fontSize:9,fontWeight:'900'},
   crateHint:{color:'#ddd',textAlign:'center',fontSize:15,lineHeight:22,marginVertical:18},wheelPointer:{color:'#fff',fontSize:32,textAlign:'center',zIndex:3,marginBottom:-13},wheel:{width:220,height:220,borderRadius:110,backgroundColor:'#250609',borderColor:RED,borderWidth:8,alignSelf:'center',alignItems:'center',justifyContent:'center',shadowColor:RED,shadowOpacity:.8,shadowRadius:20,elevation:15},wheelSegment:{position:'absolute',height:36,width:54,alignItems:'center',justifyContent:'center',backgroundColor:'#111',borderColor:GOLD,borderWidth:1,borderRadius:5},wheelValue:{color:'#fff',fontWeight:'900',fontSize:10},wheelHub:{width:70,height:70,borderRadius:35,backgroundColor:RED,borderColor:GOLD,borderWidth:4,alignItems:'center',justifyContent:'center'},wheelJA:{color:'#fff',fontSize:24,fontWeight:'900',fontStyle:'italic'},wheelButton:{backgroundColor:RED,padding:17,alignSelf:'center',minWidth:220,flexDirection:'row'},
   editorLabel:{color:'#888',fontSize:10,fontWeight:'900',letterSpacing:2,marginTop:18,marginBottom:8},nameInput:{backgroundColor:'#111',borderColor:'#444',borderWidth:1,color:'#fff',fontSize:18,fontWeight:'900',paddingHorizontal:15,paddingVertical:13},optionRow:{flexDirection:'row',gap:7,flexWrap:'wrap'},avatarOption:{width:48,height:48,backgroundColor:'#111',borderColor:'#333',borderWidth:1,alignItems:'center',justifyContent:'center'},avatarOptionActive:{borderColor:RED,borderWidth:3,backgroundColor:'#280608'},optionEmoji:{fontSize:23,color:'#fff'},
+  // Freundliches Querformat-Hauptmenü 1.9
+  menu:{flex:1,paddingHorizontal:12,paddingTop:Platform.OS==='android'?6:10,paddingBottom:7},menuMain:{flex:1,flexDirection:'row',gap:10,minHeight:0},menuWelcome:{width:'43%',justifyContent:'center'},menuGames:{flex:1,justifyContent:'center',backgroundColor:'rgba(12,12,12,.82)',borderColor:'#292929',borderWidth:1,borderRadius:16,padding:10},
+  menuBrandRow:{flexDirection:'row',alignItems:'center',gap:8,marginBottom:3},welcomeSmall:{color:GOLD,fontSize:7,fontWeight:'900',letterSpacing:1.3},welcomeTitle:{color:'#fff',fontSize:18,fontWeight:'900',fontStyle:'italic'},welcomeSub:{color:'#a5a5a5',fontSize:9,marginTop:2},
+  funBubble:{flexDirection:'row',alignItems:'center',gap:7,backgroundColor:'#211703',borderColor:GOLD,borderWidth:1,borderRadius:12,paddingVertical:6,paddingHorizontal:8,marginBottom:6},funFace:{fontSize:24},funLabel:{color:GOLD,fontSize:6,fontWeight:'900',letterSpacing:1},funText:{color:'#fff',fontSize:8,lineHeight:11,marginTop:1},funNext:{color:GOLD,fontSize:18,fontWeight:'900'},
+  profileBox:{backgroundColor:'#101820',borderColor:'#263747',borderWidth:1,borderLeftColor:RED,borderLeftWidth:4,borderRadius:12,padding:9,marginBottom:0},profileTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},profileIdentity:{flexDirection:'row',alignItems:'center',gap:8,flex:1},profileName:{color:'#fff',fontSize:11,fontWeight:'900'},profileLevel:{color:'#58d5c9',fontSize:15,fontWeight:'900',fontStyle:'italic'},coins:{color:GOLD,fontWeight:'900',fontSize:15},eyebrow:{color:'#8ca0af',fontSize:6,fontWeight:'900',letterSpacing:1},xpTrack:{height:5,backgroundColor:'#29343d',marginTop:7,borderRadius:3},xpFill:{height:5,backgroundColor:'#58d5c9',borderRadius:3},xp:{color:'#8ca0af',marginTop:3,fontSize:6,fontWeight:'800'},streakRow:{flexDirection:'row',justifyContent:'space-between',marginTop:5,borderTopColor:'#29343d',borderTopWidth:1,paddingTop:4},streakNow:{color:'#fff',fontSize:7,fontWeight:'900'},streakBest:{color:GOLD,fontSize:7,fontWeight:'900'},
+  playKicker:{color:'#58d5c9',fontSize:7,fontWeight:'900',letterSpacing:1.5,textAlign:'center'},playTitle:{color:'#fff',fontSize:20,fontWeight:'900',fontStyle:'italic',textAlign:'center',marginBottom:5},gameChoice:{minHeight:49,flexDirection:'row',alignItems:'center',gap:8,borderWidth:2,borderRadius:12,paddingHorizontal:9,paddingVertical:5,marginBottom:5},gameChoiceHot:{backgroundColor:'#3a090d',borderColor:RED},gameChoiceGold:{backgroundColor:'#302305',borderColor:GOLD},gameChoiceBlue:{backgroundColor:'#09252d',borderColor:'#38bfd0'},gameEmoji:{fontSize:24},gameTitle:{color:'#fff',fontSize:11,fontWeight:'900'},gameSub:{color:'#d0d0d0',fontSize:7,marginTop:1},gameArrow:{color:'#fff',fontSize:24,fontWeight:'900'},surpriseButton:{backgroundColor:'#6c28a2',borderColor:'#be75f2',borderWidth:1,borderRadius:16,paddingVertical:7,alignItems:'center',marginTop:1},surpriseText:{color:'#fff',fontWeight:'900',fontSize:9,letterSpacing:.8},
+  quickRow:{height:58,flexDirection:'row',gap:7,marginTop:7,marginBottom:0},quickTile:{flex:1,flexDirection:'row',alignItems:'center',justifyContent:'flex-start',gap:7,minHeight:0,borderWidth:1,borderRadius:12,paddingHorizontal:9,paddingVertical:5},quickCoins:{backgroundColor:'#2b2005',borderColor:GOLD},quickTask:{backgroundColor:'#092826',borderColor:'#58d5c9'},quickWheel:{backgroundColor:'#2c0b20',borderColor:'#e455ac'},quickReady:{borderWidth:2,shadowColor:'#e455ac',shadowOpacity:.65,shadowRadius:8,elevation:6},quickIcon:{color:'#fff',fontSize:22,fontWeight:'900'},quickText:{color:'#fff',fontSize:8,fontWeight:'900',textAlign:'left',marginTop:0},quickSub:{color:'#c5c5c5',fontSize:6,marginTop:2},readyBadge:{position:'absolute',right:6,top:5,color:'#fff',backgroundColor:RED,fontSize:6,fontWeight:'900',paddingHorizontal:5,paddingVertical:2,borderRadius:6},
+  bgCardOne:{position:'absolute',left:'3%',top:'8%',fontSize:70,color:RED,opacity:.08,transform:[{rotate:'-18deg'}]},bgCardTwo:{position:'absolute',right:'4%',bottom:'12%',fontSize:82,color:'#58d5c9',opacity:.07,transform:[{rotate:'15deg'}]},bgSpark:{position:'absolute',left:'47%',top:'5%',fontSize:24,opacity:.32},
 });
