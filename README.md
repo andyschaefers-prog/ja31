@@ -1,5 +1,11 @@
 # JA 31 – Große Klappe, kleines Blatt
 
+## Querformat-Fix 1.8
+
+- komplette Computer-Arena passt ohne Scrollen auf einen Handybildschirm
+- Spieltisch links und feste Aktionsleiste rechts
+- kompaktere Karten, Avatare und Gegneranzeigen für kleine Displays
+
 ## Battle Update 1.7
 
 - tägliches animiertes JA-Glücksrad mit acht Gewinnfeldern
