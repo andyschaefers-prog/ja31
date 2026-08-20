@@ -1,5 +1,11 @@
 # JA 31 – Große Klappe, kleines Blatt
 
+## Glücksrad-Fix 1.9.1
+
+- eigener Zeitstempel für das Glücksrad statt der alten JA-Kisten-Sperre
+- verbleibende Wartezeit wird verständlich angezeigt
+- bestehende Profile erhalten sofort ihren ersten echten Glücksrad-Dreh
+
 ## Spaßmenü 1.9
 
 - freundliches zweispaltiges Hauptmenü speziell fürs Querformat

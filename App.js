@@ -3,7 +3,7 @@ import { Animated, Image, Platform, SafeAreaView, ScrollView, StatusBar, StyleSh
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { bestBotMove, dealRound, loserFromScores, scoreHand, shouldBotKnock, swapOne } from './src/gameEngine';
-import { applyRoundResult, canOpenDailyCrates, claimDailyTask, DAILY_TASKS, ensureDaily, recordDailyRound, spinDailyWheel, STARTING_PROFILE, unlockedStakes, WHEEL_REWARDS, xpNeeded } from './src/progression';
+import { applyRoundResult, canSpinDailyWheel, claimDailyTask, DAILY_TASKS, ensureDaily, recordDailyRound, spinDailyWheel, STARTING_PROFILE, unlockedStakes, WHEEL_REWARDS, wheelWaitMilliseconds, xpNeeded } from './src/progression';
 import LocalGame from './src/LocalGame';
 import OnlineLobby from './src/OnlineLobby';
 import ComputerGame from './src/ComputerGame';
@@ -176,6 +176,14 @@ export default function App() {
     });
   }
 
+  function wheelWaitText() {
+    const remaining = wheelWaitMilliseconds(profile);
+    if (!remaining) return 'Dein Dreh ist bereit!';
+    const hours = Math.floor(remaining / 3600000);
+    const minutes = Math.ceil((remaining % 3600000) / 60000);
+    return `Nächster Dreh in ${hours} Std. ${minutes} Min.`;
+  }
+
   if (screen === 'menu') return (
     <SafeAreaView style={styles.page}>
       <StatusBar barStyle="light-content" />
@@ -201,7 +209,7 @@ export default function App() {
         <View style={styles.quickRow}>
           <TouchableOpacity style={[styles.quickTile,styles.quickCoins]} onPress={() => setScreen('rooms')}><Text style={styles.quickIcon}>🪙</Text><View><Text style={styles.quickText}>EINSATZ-RÄUME</Text><Text style={styles.quickSub}>Mehr Risiko, mehr Beute</Text></View></TouchableOpacity>
           <TouchableOpacity style={[styles.quickTile,styles.quickTask]} onPress={() => setScreen('tasks')}><Text style={styles.quickIcon}>🎯</Text><View><Text style={styles.quickText}>TAGESMISSIONEN</Text><Text style={styles.quickSub}>Belohnungen abholen</Text></View></TouchableOpacity>
-          <TouchableOpacity style={[styles.quickTile,styles.quickWheel,canOpenDailyCrates(profile)&&styles.quickReady]} onPress={() => {setDailyReward(null);setScreen('wheel')}}><Text style={styles.quickIcon}>🎡</Text><View><Text style={styles.quickText}>GLÜCKSRAD</Text><Text style={styles.quickSub}>{canOpenDailyCrates(profile)?'Dein Dreh ist bereit!':'Morgen wieder drehen'}</Text></View>{canOpenDailyCrates(profile)&&<Text style={styles.readyBadge}>BEREIT</Text>}</TouchableOpacity>
+          <TouchableOpacity style={[styles.quickTile,styles.quickWheel,canSpinDailyWheel(profile)&&styles.quickReady]} onPress={() => {setDailyReward(null);setScreen('wheel')}}><Text style={styles.quickIcon}>🎡</Text><View><Text style={styles.quickText}>GLÜCKSRAD</Text><Text style={styles.quickSub}>{wheelWaitText()}</Text></View>{canSpinDailyWheel(profile)&&<Text style={styles.readyBadge}>BEREIT</Text>}</TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
@@ -213,7 +221,7 @@ export default function App() {
 
   if (screen === 'tasks') { const ready=ensureDaily(profile); const progress={play3:ready.daily.played,win1:ready.daily.won,score31:ready.daily.score31}; return <SafeAreaView style={styles.page}><BrandBackground/><ScrollView contentContainerStyle={styles.panelPage}><TouchableOpacity style={styles.backButton} onPress={()=>setScreen('menu')}><Text style={styles.back}>‹ HAUPTMENÜ</Text></TouchableOpacity><Text style={styles.panelTitle}>TAGESAUFGABEN</Text><Text style={styles.panelSub}>JEDEN TAG NEUE BEUTE.</Text>{DAILY_TASKS.map(task=>{const done=progress[task.id]>=task.goal;const claimed=ready.daily.claimed.includes(task.id);return <View key={task.id} style={styles.task}><View style={styles.taskBadge}><Text style={styles.taskBadgeText}>{done?'✓':'JA'}</Text></View><View style={{flex:1}}><Text style={styles.taskTitle}>{task.title}</Text><Text style={styles.taskProgress}>{Math.min(progress[task.id],task.goal)} / {task.goal} · ◉ {task.reward}</Text></View><TouchableOpacity disabled={!done||claimed} onPress={()=>collectTask(task.id)} style={[styles.claim,(!done||claimed)&&styles.locked]}><Text style={styles.claimText}>{claimed?'GEHOLT':done?'HOLEN':'OFFEN'}</Text></TouchableOpacity></View>})}</ScrollView></SafeAreaView> }
 
-  if (screen === 'wheel') return <SafeAreaView style={styles.page}><BrandBackground/><View style={styles.panelPage}><TouchableOpacity style={styles.backButton} onPress={()=>setScreen('menu')}><Text style={styles.back}>‹ HAUPTMENÜ</Text></TouchableOpacity><Text style={styles.panelTitle}>JA-GLÜCKSRAD</Text><Text style={styles.panelSub}>EIN DREH ALLE 24 STUNDEN.</Text><Text style={styles.wheelPointer}>▼</Text><Animated.View style={[styles.wheel,{transform:[{rotate:wheelTurn.interpolate({inputRange:[0,1],outputRange:['0deg',`${1800+((8-wheelTarget)%8)*45}deg`]})}]}]}>{WHEEL_REWARDS.map((reward,index)=><View key={`${reward}-${index}`} style={[styles.wheelSegment,{transform:[{rotate:`${index*45}deg`},{translateY:-73}]}]}><Text style={styles.wheelValue}>{reward===0?'NEIN':reward}</Text></View>)}<View style={styles.wheelHub}><Text style={styles.wheelJA}>JA</Text></View></Animated.View><Text style={styles.crateHint}>{wheelSpinning?'DAS RAD DREHT …':dailyReward===null?'Dreh das Rad und hol dir deine Tagesbeute!':dailyReward===0?'NEIN! Morgen gibt es die nächste Chance.':`VOLLTREFFER! +${dailyReward} COINS`}</Text><TouchableOpacity disabled={!canOpenDailyCrates(profile)||wheelSpinning} onPress={spinWheel} style={[styles.wheelButton,(!canOpenDailyCrates(profile)||wheelSpinning)&&styles.locked]}><Text style={styles.buttonText}>{wheelSpinning?'LÄUFT …':canOpenDailyCrates(profile)?'JETZT DREHEN':'MORGEN WIEDER'}</Text></TouchableOpacity></View></SafeAreaView>;
+  if (screen === 'wheel') return <SafeAreaView style={styles.page}><BrandBackground/><View style={styles.panelPage}><TouchableOpacity style={styles.backButton} onPress={()=>setScreen('menu')}><Text style={styles.back}>‹ HAUPTMENÜ</Text></TouchableOpacity><Text style={styles.panelTitle}>JA-GLÜCKSRAD</Text><Text style={styles.panelSub}>EIN DREH ALLE 24 STUNDEN.</Text><Text style={styles.wheelPointer}>▼</Text><Animated.View style={[styles.wheel,{transform:[{rotate:wheelTurn.interpolate({inputRange:[0,1],outputRange:['0deg',`${1800+((8-wheelTarget)%8)*45}deg`]})}]}]}>{WHEEL_REWARDS.map((reward,index)=><View key={`${reward}-${index}`} style={[styles.wheelSegment,{transform:[{rotate:`${index*45}deg`},{translateY:-73}]}]}><Text style={styles.wheelValue}>{reward===0?'NEIN':reward}</Text></View>)}<View style={styles.wheelHub}><Text style={styles.wheelJA}>JA</Text></View></Animated.View><Text style={styles.crateHint}>{wheelSpinning?'DAS RAD DREHT …':dailyReward===null?wheelWaitText():dailyReward===0?'NEIN! Morgen gibt es die nächste Chance.':`VOLLTREFFER! +${dailyReward} COINS`}</Text><TouchableOpacity disabled={!canSpinDailyWheel(profile)||wheelSpinning} onPress={spinWheel} style={[styles.wheelButton,(!canSpinDailyWheel(profile)||wheelSpinning)&&styles.locked]}><Text style={styles.buttonText}>{wheelSpinning?'LÄUFT …':canSpinDailyWheel(profile)?'JETZT DREHEN':wheelWaitText().toUpperCase()}</Text></TouchableOpacity></View></SafeAreaView>;
 
   if (screen === 'local') return <LocalGame onExit={() => setScreen('menu')} />;
   if (screen === 'online') return <OnlineLobby onExit={() => setScreen('menu')} />;
