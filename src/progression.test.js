@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { applyRoundResult, claimDailyTask, openDailyCrate, recordBattleEvent, recordDailyRound, spinDailyWheel, STARTING_PROFILE, unlockedStakes, xpNeeded } from './progression.js';
+import { applyRoundResult, canSpinDailyWheel, claimDailyTask, openDailyCrate, recordBattleEvent, recordDailyRound, spinDailyWheel, STARTING_PROFILE, unlockedStakes, xpNeeded } from './progression.js';
 
 test('new players start with only the 50 coin stake', () => {
   assert.deepEqual(unlockedStakes(1, 1000), [50]);
@@ -51,6 +51,12 @@ test('daily wheel awards the landed coin field only once', () => {
   assert.equal(first.reward, 100);
   assert.equal(first.profile.coins, 1100);
   assert.equal(spinDailyWheel(first.profile, () => 0.9, 200000001).reward, null);
+});
+
+test('legacy crate cooldown does not block the new daily wheel', () => {
+  const legacyProfile = { ...STARTING_PROFILE, lastCrateAt: 299999999 };
+  assert.equal(canSpinDailyWheel(legacyProfile, 300000000), true);
+  assert.notEqual(spinDailyWheel(legacyProfile, () => 0.2, 300000000).reward, null);
 });
 
 test('battle statistics count games, results and won coins', () => {

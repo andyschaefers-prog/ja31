@@ -79,11 +79,20 @@ export function openDailyCrate(profile, random = Math.random, timestamp = Date.n
 
 export const WHEEL_REWARDS = [0, 25, 50, 75, 100, 250, 500, 50];
 
+export function canSpinDailyWheel(profile, timestamp = Date.now()) {
+  return !profile.lastWheelAt || timestamp - profile.lastWheelAt >= 24 * 60 * 60 * 1000;
+}
+
+export function wheelWaitMilliseconds(profile, timestamp = Date.now()) {
+  if (canSpinDailyWheel(profile, timestamp)) return 0;
+  return Math.max(0, (profile.lastWheelAt + 24 * 60 * 60 * 1000) - timestamp);
+}
+
 export function spinDailyWheel(profile, random = Math.random, timestamp = Date.now()) {
-  if (!canOpenDailyCrates(profile, timestamp)) return { profile, reward: null, index: null };
+  if (!canSpinDailyWheel(profile, timestamp)) return { profile, reward: null, index: null };
   const index = Math.min(WHEEL_REWARDS.length - 1, Math.floor(random() * WHEEL_REWARDS.length));
   const reward = WHEEL_REWARDS[index];
-  return { profile: { ...profile, coins: profile.coins + reward, lastCrateAt: timestamp }, reward, index };
+  return { profile: { ...profile, coins: profile.coins + reward, lastWheelAt: timestamp }, reward, index };
 }
 
 const STAKE_UNLOCKS = [
